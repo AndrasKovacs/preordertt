@@ -54,6 +54,21 @@ record Ty (Γ : Con) : Set where
               → R (coeT f xx) zz g
 open Ty public
 
+record TyP (Γ : Con) : Set where
+  constructor ty
+  private module Γ = Con Γ
+  field
+    !   : ! Γ → Prop
+    R   : ∀ {x y} → ! x → ! y → R Γ x y → Prop
+    rfl : ∀ {x xx} → R xx xx (rfl Γ {x})
+    trs : ∀ {x y z f g xx yy zz} → R {x}{y} xx yy f → R {y}{z} yy zz g
+                                 → R  xx zz (trs Γ f g)
+    coeT : ∀ {x y} → Γ.R x y → ! x → ! y
+    cohT : ∀ {x y}(f : Γ.R x y)(xx : ! x) → R xx (coeT f xx) f
+    coeT-rec : ∀ {x y z}{f : Γ.R x y}{g : Γ.R y z}{xx zz} → R xx zz (Γ.trs f g)
+              → R (coeT f xx) zz g
+open TyP public
+
 abstract
   ty≡ : ∀ {Γ}{A B : Ty Γ}
     → (p : (x : ! Γ) → ! A x ≡ ! B x)
@@ -78,6 +93,12 @@ sub≡ : ∀ {Γ Δ}{σ δ : Sub Γ Δ} → (∀ x → ! σ x ≡ ! δ x) → σ
 sub≡ {Γ} {Δ} {σ} {δ} p with funext p
 ... | refl = refl
 
+sub≃ : ∀ {Γ Γ' Δ Δ'}{σ : Sub Γ Δ}{δ : Sub Γ' Δ'}
+       → (Γ ≡ Γ')
+       → (Δ ≡ Δ')
+       → (∀ {x₀}{x₁} (x₀₁ : x₀ ≃ x₁) → ! σ x₀ ≃ ! δ x₁) → σ ≃ δ
+sub≃ {Γ} {.Γ} {Δ} {.Δ} {σ} {δ} refl refl r = sub≡ (λ x → uñ (r refl̃)) ~
+
 opS : ∀ {Γ Δ} → Sub Γ Δ → Sub (op Γ) (op Δ)
 opS {Γ}{Δ} σ = sub
   (! σ)
@@ -99,6 +120,12 @@ abstract
       → t ≡ u
   tm≡ {Γ} {A} {t} {u} p with funext p
   ... | refl = refl
+
+-- record TmP (Γ : Con) (A : TyP Γ) : Prop where
+--   constructor tmP
+--   field
+--     ! : (x : ! Γ) → ! A x
+-- open TmP public
 
 ∙ : Con
 ∙ = con ⊤ (λ _ _ → 𝕋) _ _
@@ -215,6 +242,67 @@ q+ {Γ} A = tm ₂ ₂
 
 q+[] : ∀ {Γ Δ A}{σ : Sub Δ Γ}{t} → q+ A [ ,+ A σ t ]t ≡ t
 q+[] = refl
+
+-- We have vars pointing to + and =,
+-- op-in = is still =
+------------------------------------------------------------
+
+_▶=_ : (Γ : Con) → Ty ∙ → Con
+Γ ▶= A = con
+  (Σ (! Γ) (λ _ → ! A _))
+  (λ {(γ₀ , a₀)(γ₁ , a₁) → ΣPP (R Γ γ₀ γ₁) (λ f → R A a₀ a₁ _ ∧ R A a₁ a₀ _)})
+  ((rfl Γ) , (rfl A) , (rfl A))
+  (λ p q → trs Γ (₁ p) (₁ q) , (trs A (₁ (₂ p)) (₁ (₂ q))) ,
+          trs A (q .₂ .₂) (p .₂ .₂))
+
+p= : ∀ {Γ} A → Sub (Γ ▶= A) Γ
+p= {Γ} A = sub ₁ ₁
+
+q= : ∀ {Γ} A → Tm (Γ ▶= A) (A [ ε ]T)
+q= {Γ} A = tm ₂ λ f → f .₂ .₁
+
+op▶= : ∀ {Γ A} → op (Γ ▶= A) ≡ (op Γ ▶= A)
+op▶= {Γ}{A} = con≡
+  refl
+  (λ x y → propext (λ p → p .₁ , p .₂ .₂ , p .₂ .₁)
+                   (λ p → p .₁ , p .₂ .₂ , p .₂ .₁))
+
+op-p= : ∀ {Γ A} → opS (p= {Γ} A) ≃ p= {op Γ} A
+op-p= {Γ}{A} = sub≃ (op▶= {Γ}{A}) refl (λ {refl̃ → refl̃})
+
+-- how to do: type which depends on only the ▶= parts in a context
+-- ideas: contextual proset? which is always given as an iterated
+-- total proset?
+
+
+
+-- core : Con → Con
+-- core Γ = con
+--   (! Γ)
+--   (λ x y → R Γ x y ∧ R Γ y x)
+--   (rfl Γ , rfl Γ)
+--   (λ {(p , q)(p' , q') → (trs Γ p p') , (trs Γ q' q)})
+
+-- coreT+ : ∀ {Γ} → Ty Γ → Ty (core Γ)
+-- coreT+ {Γ} A = ty
+--   (! A)
+--   (λ { {x}{y} xx yy (f , g) → R A xx yy f ∧ R A yy xx g})
+--   {!!}
+--   {!!}
+--   {!!}
+--   {!!}
+--   {!!}
+
+-- core▶+ : ∀ {Γ A} → core (Γ ▶+ A) ≡ {!core Γ ▶= coreT+ A!}
+-- core▶+ = {!!}
+
+-- -- NO GOOD, we don't want to double morphisms in Γ!
+-- _▶='_ : (Γ : Con) → Ty (core Γ) → Con
+-- Γ ▶=' A =
+--   con (Σ (! Γ) (! A))
+--       (λ {(x , a)(y , b) → ΣPP (R Γ x y) {!R A a b!}})
+--       {!!}
+--       {!!}
 
 -- Licata: there is no rule for using contravariant variables!
 -- It seems that it can't even be given in the model.

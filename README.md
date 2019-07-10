@@ -22,3 +22,7 @@ extension is modelled similarly to Harper & Licata's [2D directed TT](https://ww
 The "cxt" folder has context extension is done similarly as in the
 presentation by Altenkirch at [2019 Krakow TYPES
 meeting](https://eutypes.cs.ru.nl/eutypes_pmwiki/uploads/Meetings/Altenkirch_slides.pdf).
+
+The "formalCore" folder is WIP, and it shall contain a version where
+there is a modal invariant "core" context, distinguished from the
+polarized context.

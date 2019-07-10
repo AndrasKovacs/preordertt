@@ -1,0 +1,38 @@
+
+Issue 1: only contravariant type dependency in Π
+  - E.g: ((A : U) → A → A) is not a valid type, because A occurs invariantly
+    in the domain type.
+
+  - solution: add formal "core" of the context: context looks like
+    Γ|Δ where Γ is a setoid and Δ is a proset fibration over Γ.
+    Γ contains all invariant variables, and Δ contains the polar variables.
+
+    Now, invariant Π formation looks like this:
+
+      Γ|∙ ⊢ A type    Γ,A | Δ[wk] ⊢ B type
+      ────────────────────────────────
+            Γ|Δ ⊢ Π= A B type
+
+  - For ergonomics, it would be nice to add an internal modality for
+    invariance.
+
+  - I looked at rules for necessity by Gratzer et al., but necessity
+    is not enough, because it only seems to describe closed inhabitants
+    but not inhabitants depending only on a modal context.
+
+Issue 2: Only contravariant underlying functions in Π!
+  - With the modal invariant contexts, we can sensibly have (A : U) →
+    A → A now, but we cannot write down the identity function (λ
+    x. x), because it's covariant.
+  - TODO: check that covariant + invariant Π underlying functions are
+    possible.
+
+Simplified version TODO: Γ|Δ context is modelled by just a set for Γ
+and a proset fibration over for Δ. Invariant things are always
+discrete.  A proset fibration over a set needs only a family of
+homogeneous equivalence relations:
+
+   !   : Γ.! → Set
+   R   : ∀ {x} → ! x → ! x → Prop
+   rfl : R xx xx
+   trs : R xx yy → R yy zz → R xx zz
